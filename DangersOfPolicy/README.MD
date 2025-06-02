@@ -1,4 +1,4 @@
-# Monitor First: Protecting Your AKS Workloads from Azure Policy Pitfalls
+# Monitor First: Protecting your managed services from Azure Policy Pitfalls
 
 *How enforcing Azure Policies without proper planning can silently break managed services in Azure and the proven approach to avoid it*
 
