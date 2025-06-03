@@ -217,7 +217,8 @@ The Azure portal has significant limitations for handling these scenarios:
 
 To illustrate this challenge concretely, here's what happens when you try to deploy AKS in a greenfield environment with restrictive policies already active:
 
-[Screenshot of pipeline failure showing policy blocking AKS deployment]
+![Pipeline failure](/DangersOfPolicy/img/15%20-%20greenfieldpipefail1.png)
+![Pipeline failure2](/DangersOfPolicy/img/16%20-%20greenfieldpipefail2.png)
 
 The deployment fails when AKS attempts to create the MC_* resource group and the required resources within. There's no good way to prevent this through portal-based policy management.
 
