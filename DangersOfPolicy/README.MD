@@ -243,3 +243,159 @@ The built-in "Require a tag on resources" policy has a simple rule structure:
         "effect": "deny"
     }
 }
+
+This rule asks a single question: "Does this resource have the required tag?" If not, deny it. It's simple but inflexible - there's no way to exclude managed service resource groups.
+```
+
+### The Custom Policy Rule: Adding Intelligence
+
+The custom policy takes a more sophisticated approach with multiple conditions using allOf:
+```json
+"policyRule": {
+    "if": {
+        "allOf": [
+            // Condition 1: Resource type filtering
+            {
+                "anyOf": [
+                    {
+                        "field": "type",
+                        "in": "[parameters('resourceTypeList')]"
+                    },
+                    {
+                        "allOf": [
+                            {
+                                "value": "[length(parameters('resourceTypeList'))]",
+                                "equals": 0
+                            },
+                            {
+                                "count": {
+                                    "value": "[parameters('excludedResourceTypes')]",
+                                    "name": "excludedResourceTypes",
+                                    "where": {
+                                        "field": "type",
+                                        "like": "[current('excludedResourceTypes')]"
+                                    }
+                                },
+                                "equals": 0
+                            }
+                        ]
+                    }
+                ]
+            },
+            // Condition 2: Tag requirement (same as built-in)
+            {
+                "field": "[concat('tags[', parameters('tagName'), ']')]",
+                "exists": "false"
+            },
+            // Condition 3: Resource group exclusions
+            {
+                "count": {
+                    "value": "[parameters('excludedRG')]",
+                    "name": "excludedRG",
+                    "where": {
+                        "value": "[resourceGroup().name]",
+                        "like": "[current('excludedRG')]"
+                    }
+                },
+                "equals": 0
+            }
+        ]
+    },
+    "then": {
+        "effect": "[parameters('effect')]"
+    }
+}
+```
+
+**Note**: This custom policy definition is provided as an example within the Enterprise Policy as Code (EPAC) framework.
+
+### The Key Insight: Resource Group-Level Exclusions
+
+The custom policy handles the AKS scenario through its excludedRG parameter:
+
+```json
+"excludedRG": {
+    "defaultValue": [
+        "MC_*",
+        "synapseworkspace-managedrg-*",
+        "managed-rg-*", 
+        "databricks-*",
+        "DefaultResourceGroup*",
+        "NetworkWatcherRG",
+        "LogAnalyticsDefault*",
+        "cloud-shell-storage*"
+    ]
+}
+```
+**When AKS tries to create resources:**
+
+- The MC_myakscluster_eastus_12345 resource group matches the MC_* pattern and is excluded.
+- All resources created within that resource group are automatically excluded - managed disks, network security groups, public IPs, load balancers, and VMs.
+- AKS can manage its entire infrastructure footprint without policy interference.
+
+This resource group-level exclusion is far more efficient than trying to exclude individual resource types. One wildcard pattern handles the entire managed service footprint.
+
+### Policy Evaluation: Runtime vs Assignment Time
+This comparison illustrates a fundamental principle: Azure Policy rules are evaluated at resource creation time, not assignment time. The custom policy can make dynamic decisions based on resource properties that don't exist when the policy is assigned.
+
+This is why:
+
+- Built-in policies work well for simple, universal requirements
+- Custom policies are needed for complex scenarios with managed services
+- Portal-based exemptions can't handle "future" resources that don't exist yet
+
+### Enterprise Policy as Code (EPAC) Framework
+
+The custom policy shown here comes from Microsoft's Enterprise Policy as Code (EPAC) framework, an open-source, Microsoft-curated solution that has been battle-tested in large enterprise organizations. EPAC provides a comprehensive library of custom policy definitions that handle real-world scenarios like managed service exclusions.
+
+The EPAC framework offers significant advantages when tackling this level of policy complexity:
+
+- Pre-built policies that handle common managed service patterns
+- Active community support from enterprise practitioners
+- Microsoft backing and regular updates
+- Proven approaches from large-scale deployments
+
+I can personally attest to the value of the EPAC framework as I have used it to implement and maintain governance in large environment with over 10000 resources, including pretty much every managed service in existence, for close to 3 years.
+
+### Implementation Approaches
+
+**ARM/Bicep Templates:** Deploy custom policies alongside your infrastructure using Infrastructure as Code.
+
+**Terraform/Pulumi:** Include policy definitions as part of your broader infrastructure automation.
+
+**EPAC Framework:** Use the complete enterprise-grade policy management solution.
+
+### When to apply different principles
+
+**Monitor First (Brownfield):**
+
+- Existing environments with established workloads
+- Gradual governance implementation
+- Learning and discovery phases
+- Portal-based management is sufficient
+
+**Custom Policies (Greenfield):**
+
+- New environments requiring immediate enforcement
+- Complex exclusion patterns beyond portal capabilities
+- Standardized governance across multiple environments
+- Enterprise-scale policy management
+
+### The Technical Reality
+
+This progression from portal-based to code-based policy management reflects an important reality: Azure Policy appears simple but quickly becomes complex in real-world scenarios. While basic policies can be managed through the portal, enterprise governance typically requires Infrastructure as Code approaches to handle the full complexity of modern Azure environments.
+
+For organizations implementing sophisticated governance at scale, frameworks like EPAC provide both the technical foundation and the community expertise needed to navigate Azure Policy's complexity successfully.
+
+## Conclusion
+Azure Policy appears straightforward but reveals significant complexity when applied to managed services like AKS, Synapse, and Databricks. These services autonomously provision Azure resources in ways that can conflict with governance policies, creating operational challenges that are difficult to predict and troubleshoot.
+
+This article has demonstrated two essential approaches for different scenarios:
+
+For brownfield environments with existing workloads, the "Monitor First" methodology provides a safe path to policy enforcement. By starting with audit mode, evaluating impact, and planning exemptions before enforcement, you can implement governance while avoiding unexpected disruptions.
+
+For greenfield environments or complex exclusion requirements, custom policy definitions with built-in exclusion logic become necessary. The portal's limitations--no wildcard support, static exemptions only--mean that enterprise governance typically requires Infrastructure as Code approaches and frameworks like EPAC.
+
+The progression from simple portal-based policies to sophisticated policy-as-code solutions isn't a failure of the simpler approaches--it's the natural evolution when dealing with the real complexity of modern Azure environments. Understanding when you've outgrown portal-based management is crucial for maintaining both strong governance and operational reliability.
+
+Remember: Good governance enhances operations -- it shouldn't break them. Start with monitoring, progress to custom solutions when needed, and don't hesitate to embrace enterprise frameworks when the complexity demands it.
