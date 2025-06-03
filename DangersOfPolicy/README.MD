@@ -243,9 +243,9 @@ The built-in "Require a tag on resources" policy has a simple rule structure:
         "effect": "deny"
     }
 }
+```
 
 This rule asks a single question: "Does this resource have the required tag?" If not, deny it. It's simple but inflexible - there's no way to exclude managed service resource groups.
-```
 
 ### The Custom Policy Rule: Adding Intelligence
 
