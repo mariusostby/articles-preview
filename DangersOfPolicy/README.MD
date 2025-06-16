@@ -399,4 +399,6 @@ For greenfield environments or complex exclusion requirements, custom policy def
 
 The progression from simple portal-based policies to sophisticated policy-as-code solutions isn't a failure of the simpler approaches--it's the natural evolution when dealing with the real complexity of modern Azure environments. Understanding when you've outgrown portal-based management is crucial for maintaining both strong governance and operational reliability.
 
+This has been a relatively heavy article. The intention is not to discourage the use of Azure Policy, but to emphasize that such a powerful tool must be used correctly. And the complexity combined with the potential for damage from misuse means that this is something you must allocate significant time and resources to before starting. It will pay off when you succeed, as you can achieve an unparalleled degree of top-level control.
+
 Remember: Good governance enhances operations -- it shouldn't break them. Start with monitoring, progress to custom solutions when needed, and don't hesitate to embrace enterprise frameworks when the complexity demands it.
